@@ -1,0 +1,65 @@
+
+\documentclass{scrreprt}
+
+\usepackage[utf8]{inputenc}
+\usepackage{zed-csp}
+
+\begin{document}
+
+\author{Andreas Krohn, Benjamin Jochheim, Theodor Nolte, Benjamin Vetter}
+\title{TH2 - Übung 2}
+
+\maketitle
+
+\chapter{CSP Basis}
+
+\section{Alphabete}
+
+\begin{equation}
+  P = (a \then b \then Skip) \extchoice (b \then d \then Stop)
+\end{equation}
+
+\begin{eqnarray*}
+  \alpha(P) &=& \alpha(a \then b \then Skip) \cup \alpha(b \then d \then Stop) \\
+            &=& \alpha(b \then Skip) \cup \{a\} \cup \alpha(d \then Stop) \cup \{b\} \\
+            &=& \alpha(Skip) \cup \{b\} \cup \{a\} \cup \alpha(Stop) \cup \{d\} \cup \{b\} \\
+            &=& \emptyset \cup \{b, a\} \cup \emptyset \cup \{b, d\} \\
+            &=& \{a, b, d\}
+\end{eqnarray*}
+
+\begin{equation}
+  Q = (x \then y \then Stop) \intchoice (u \then Stop)
+\end{equation}
+
+\begin{eqnarray*}
+  \alpha(Q) &=& \alpha(x \then y \then Stop) \cup \alpha(u \then Stop) \\
+            &=& \alpha(y \then Stop) \cup \{x\} \cup \alpha(Stop) \cup \{u\} \\
+            &=& \alpha(Stop) \cup \{y\} \cup \{x\} \cup \emptyset \cup \{u\} \\
+            &=& \emptyset \cup \{x, y, u\} \\
+            &=& \{u, x, y\}
+\end{eqnarray*}
+
+\begin{equation}
+  R = (Q; P) \setminus \{x, y\}
+\end{equation}
+
+\begin{eqnarray*}
+  \alpha(R) &=& \alpha(Q; P) \setminus \{x, y\} \\
+            &=& (\alpha(Q) \cup \alpha(P)) \setminus \{x, y\} \\
+            &=& (\{u, x, y\} \cup \{a, b, d\}) \setminus \{x, y\} \\
+            &=& \{a, b, d, u, x, y\} \setminus \{x, y\} \\
+            &=& \{a, b, d, u\}
+\end{eqnarray*}
+
+\begin{equation}
+  S = (P \parallel[\{a, b\}][\{x, y\}] R) \bigtriangleup Q
+\end{equation}
+
+\begin{eqnarray*}
+  \alpha(S) &=& \alpha(P \parallel[\{a, b\}][\{x, y\}] R) \cup \alpha(Q) \\
+            &=& \{a, b\} \cup \{x, y\} \cup \{u, x, y\} \\
+            &=& \{a, b, u, x, y\}
+\end{eqnarray*}
+
+\end{document}
+
