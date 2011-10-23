@@ -7,9 +7,10 @@ Pid = {0..N}
 
 -- channel Deklarationen 
 
-
-
-
+channel rdTurn, wrTurn
+channel addInterested, removeInterested, cardInterested, allInterested
+channel error
+channel start, enter, leave
 
 -- Prozesse
 
