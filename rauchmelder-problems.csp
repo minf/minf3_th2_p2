@@ -1,0 +1,53 @@
+nametype SId = {0,1}
+
+channel smoke, no_smoke, check, reset : SId
+channel alarm, ack
+
+--Modellierung des Sensors
+SENSOR (sid) = reset.sid -> SENSOR(sid)
+            [] check.sid -> ((smoke!sid -> SENSOR(sid))
+                             |~| (no_smoke!sid -> SENSOR(sid)))
+
+--Zustand des Sensors wenn Rauch erkannt
+SMOKING_SENSOR (sid) = check.sid -> smoke!sid -> SMOKING_SENSOR(sid)
+                    [] reset -> SENSOR (sid)
+
+--Melder (Reset Teil)
+RESET_MELDER = reset!0 -> reset!1 -> MELDER
+
+--Melder (Auswertungs Teil)
+MELDER_ALARM_SUB = smoke?x1 -> (smoke?x2 -> alarm -> RESET_MELDER
+                                [] no_smoke.(1-x1) -> reset!x1 -> MELDER)
+				[] no_smoke?y1 -> (no_smoke.(1-y1) -> MELDER
+				[] smoke?y2 -> reset!y2 -> MELDER)
+
+--Melder (Check Teil)
+MELDER = check!0 -> check!1 -> MELDER_ALARM_SUB
+
+--System
+SYS = (SENSOR(1) ||| SENSOR(0))
+          [| {| smoke, no_smoke, check, reset, ack  |} |]
+      MELDER
+
+--Spezifikation (Empfang der Signale beider Sensoren)
+RCV_SMOKES = 
+		 smoke.0 -> smoke.1 -> STOP
+             |~| smoke.1 -> smoke.0 -> SKIP
+	     |~| smoke.0 -> no_smoke.1 -> SKIP
+	     |~| no_smoke.1 -> smoke.0 -> RCV_SMOKES
+	     |~| no_smoke.0 -> smoke.1 -> RCV_SMOKES
+	     |~| smoke.1 -> no_smoke.0 -> RCV_SMOKES
+	     |~| no_smoke.0 -> no_smoke.1 -> RCV_SMOKES
+	     |~| no_smoke.1 -> no_smoke.0 -> RCV_SMOKES
+
+--Spezifikation (WENN genau zwei smoke empfangen, dann auch Alarm auslösen)
+
+
+CHECK_MELDER = RCV_SMOKES -> alarm -> ack -> CHECK_MELDER
+
+--Check der Implementierung
+
+assert CHECK_MELDER [F= SYS\{| check|}
+
+
+

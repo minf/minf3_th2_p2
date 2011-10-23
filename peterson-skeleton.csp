@@ -1,0 +1,70 @@
+-- CSP Modell 
+-- für die Lösung von Peterson 
+-- zum wechselseitigen Ausschluss bei mehreren Prozessen
+Bool = {true,false}
+N = 4
+Pid = {0..N}
+
+-- channel Deklarationen 
+
+
+
+
+
+-- Prozesse
+
+turn (n) =    rdTurn!n  -> turn (n)
+           [] wrTurn?x  -> turn (x)
+
+-- idea: use interested just to count the number of add/remove-events
+-- i.e. if a process is interested, the counter is increased (wrInterested.add)
+--      if it is finished after working on the critical section the
+--      counter is decreased (wrInterested.remove)
+
+interested (set) =    addInterested?id            
+                      -> interested (union (set, {id}))
+                   [] removeInterested?x           
+                       -> if (card (set) == 0)
+                          then error -> STOP
+                          else interested (diff (set, {x}))
+                   [] allInterested!set            
+                      -> interested(set)
+                   [] cardInterested!card(set)     
+                      -> interested(set)
+
+Search (s, n) =  if (card (s) == 0)
+                   then 99
+                  else if (n > N)
+                  then 999
+                  else if member (n, s) 
+                       then n
+                       else Search (s, n + 1)
+
+enterregion (pid) = addInterested!pid -> cardInterested?x -> 
+                    if (x == 1)
+                    then wrTurn!pid -> loop (pid)
+                    else loop (pid)
+
+loop (pid) = rdTurn?t -> 
+             if ( t == pid)
+             then SKIP
+             else loop (pid)
+
+leaveregion (pid) = removeInterested!pid -> 
+                    allInterested?y -> 
+                    let next = Search (y, 0)
+                    within
+                    if (next > N)
+                    then error -> STOP
+                    else wrTurn!next -> SKIP
+
+P(pid) = start.pid -> 
+         enterregion(pid); enter.pid -> 
+         leave.pid -> 
+         leaveregion(pid); P (pid)
+
+-- System Deklaration SYS
+
+
+-- Prüfbedingungen
+
