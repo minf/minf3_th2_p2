@@ -4,7 +4,6 @@
 Bool = {true,false}
 N = 2
 Pid = {0..N}
-Pids = {0..N+1}
 
 -- channel Deklarationen
 
@@ -27,22 +26,22 @@ TURN (n) =    rdTurn!n  -> TURN (n)
 
 INTERESTED (set) =    addInterested?id
                       -> INTERESTED (union (set, {id}))
-                   [] removeInterested?x
+                   [] (removeInterested?x
                        -> if (card (set) == 0)
                           then error -> STOP
-                          else INTERESTED (diff (set, {x}))
+                          else INTERESTED (diff (set, {x})) )
                    [] allInterested!set
                       -> INTERESTED(set)
                    [] cardInterested!card(set)
                       -> INTERESTED(set)
 
-SEARCH (s, n) =  if (card (s) == 0)
-                   then 99
-                  else if (n > N)
+SEARCH (s, n) = if (card (s) == 0)
+                  then 99
+                else if (n > N)
                   then 999
-                  else if member (n, s)
-                       then n
-                       else SEARCH (s, n + 1)
+                else if member (n, s)
+                     then n
+                     else SEARCH (s, n + 1)
 
 ENTERREGION (pid) = addInterested!pid -> cardInterested?x ->
                     if (x == 1)
@@ -78,20 +77,31 @@ SYS = (
         [|{| addInterested, removeInterested, cardInterested, allInterested |}|]
       INTERESTED({})
 
+DONT_CARE = {| addInterested, removeInterested, cardInterested, allInterested,
+              wrTurn, rdTurn |}
+
+TSYS = SYS \ DONT_CARE
+
 -- Prüfbedingungen
--- c)  die prueufen, ob das System den wechselseitigen Ausschluss garantieren:
+-- c) die prueufen, ob das System den wechselseitigen Ausschluss garantieren:
+-- d) die belegen, dass Petersons Loesung keine strict alternation realisiert.
 
+-- kann mutual exclusion
+TEST1 = start.0 -> enter.0 -> leave.0 -> start.1 -> enter.1 -> leave.1 -> STOP
+assert TSYS [T= TEST1
 
---d) die belegen, dass Petersons Loesung keine strict alternation realisiert.
+-- muss aber nicht
+TEST2 = start.0 -> start.1 -> enter.0 -> enter.1 -> leave.0 -> leave.1 -> STOP
+assert TSYS [T= TEST2
 
+-- auch kein strict alternation ??
+TEST3 = start.0 -> start.1 -> start.2 ->
+---       P=1  P=0
+          enter.1 -> 
+              enter.0 -> 
+          leave.1 -> 
+          start.1 -> 
+              leave.0 -> 
+          enter.1 -> leave.1 -> STOP
+assert TSYS [T= TEST3
 
-
-
-
-
-
-
-
-SYS1 = start.0 -> enter.0 -> leave.0 -> start.1 -> enter.1 -> leave.1 -> STOP
-
-assert SYS [T= SYS1
