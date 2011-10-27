@@ -1,71 +1,82 @@
--- CSP Modell 
--- für die Lösung von Peterson 
+-- CSP Modell
+-- für die Lösung von Peterson
 -- zum wechselseitigen Ausschluss bei mehreren Prozessen
 Bool = {true,false}
-N = 4
+N = 2
 Pid = {0..N}
+Pids = {0..N+1}
 
--- channel Deklarationen 
+-- channel Deklarationen
 
-channel rdTurn, wrTurn
-channel addInterested, removeInterested, cardInterested, allInterested
+channel rdTurn, wrTurn                  : Pid
+channel addInterested, removeInterested : Pid
+channel allInterested                   : Set (Pid)
+channel cardInterested                  : union (Pid, {N+1})
 channel error
-channel start, enter, leave
+channel start, enter, leave             : Pid
 
 -- Prozesse
 
-turn (n) =    rdTurn!n  -> turn (n)
-           [] wrTurn?x  -> turn (x)
+TURN (n) =    rdTurn!n  -> TURN (n)
+           [] wrTurn?x  -> TURN (x)
 
 -- idea: use interested just to count the number of add/remove-events
 -- i.e. if a process is interested, the counter is increased (wrInterested.add)
 --      if it is finished after working on the critical section the
 --      counter is decreased (wrInterested.remove)
 
-interested (set) =    addInterested?id            
-                      -> interested (union (set, {id}))
-                   [] removeInterested?x           
+INTERESTED (set) =    addInterested?id
+                      -> INTERESTED (union (set, {id}))
+                   [] removeInterested?x
                        -> if (card (set) == 0)
                           then error -> STOP
-                          else interested (diff (set, {x}))
-                   [] allInterested!set            
-                      -> interested(set)
-                   [] cardInterested!card(set)     
-                      -> interested(set)
+                          else INTERESTED (diff (set, {x}))
+                   [] allInterested!set
+                      -> INTERESTED(set)
+                   [] cardInterested!card(set)
+                      -> INTERESTED(set)
 
-Search (s, n) =  if (card (s) == 0)
+SEARCH (s, n) =  if (card (s) == 0)
                    then 99
                   else if (n > N)
                   then 999
-                  else if member (n, s) 
+                  else if member (n, s)
                        then n
-                       else Search (s, n + 1)
+                       else SEARCH (s, n + 1)
 
-enterregion (pid) = addInterested!pid -> cardInterested?x -> 
+ENTERREGION (pid) = addInterested!pid -> cardInterested?x ->
                     if (x == 1)
-                    then wrTurn!pid -> loop (pid)
-                    else loop (pid)
+                    then wrTurn!pid -> LOOP (pid)
+                    else LOOP (pid)
 
-loop (pid) = rdTurn?t -> 
+LOOP (pid) = rdTurn?t ->
              if ( t == pid)
              then SKIP
-             else loop (pid)
+             else LOOP (pid)
 
-leaveregion (pid) = removeInterested!pid -> 
-                    allInterested?y -> 
-                    let next = Search (y, 0)
+LEAVEREGION (pid) = removeInterested!pid ->
+                    allInterested?y ->
+                    let 
+                      next = SEARCH (y, 0)
                     within
-                    if (next > N)
-                    then error -> STOP
-                    else wrTurn!next -> SKIP
+                      if (next > N)
+                      then error -> STOP
+                      else wrTurn!next -> SKIP
 
-P(pid) = start.pid -> 
-         enterregion(pid); enter.pid -> 
-         leave.pid -> 
-         leaveregion(pid); P (pid)
+P(pid) = start.pid ->
+         ENTERREGION(pid); enter.pid ->
+         leave.pid ->
+         LEAVEREGION(pid); P (pid)
 
 -- System Deklaration SYS
 
+SYS = (
+        (||| pid:Pid @ P(pid))
+          [|{| wrTurn, rdTurn |}|]
+        TURN(0)
+      )
+        [|{| addInterested, removeInterested, cardInterested, allInterested |}|]
+      INTERESTED({})
 
 -- Prüfbedingungen
 -- c)  die prueufen, ob das System den wechselseitigen Ausschluss garantieren:
@@ -81,3 +92,6 @@ P(pid) = start.pid ->
 
 
 
+SYS1 = start.0 -> enter.0 -> leave.0 -> start.1 -> enter.1 -> leave.1 -> STOP
+
+assert SYS [T= SYS1
