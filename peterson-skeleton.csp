@@ -103,5 +103,5 @@ TEST3 = start.0 -> start.1 -> start.2 ->
           start.1 -> 
               leave.0 -> 
           enter.1 -> leave.1 -> STOP
-assert TSYS [T= TEST3
+
 

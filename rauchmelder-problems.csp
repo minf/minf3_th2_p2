@@ -4,50 +4,98 @@ channel smoke, no_smoke, check, reset : SId
 channel alarm, ack
 
 --Modellierung des Sensors
-SENSOR (sid) = reset.sid -> SENSOR(sid)
-            [] check.sid -> ((smoke!sid -> SENSOR(sid))
-                             |~| (no_smoke!sid -> SENSOR(sid)))
+-- SENSOR (sid) = reset.sid -> SENSOR(sid)
+--             [] check.sid -> ((smoke!sid -> SENSOR(sid))
+--                              |~| (no_smoke!sid -> SENSOR(sid)))
+
+-- 1. Statische Semantik, Hinsehen, reset.sid >> reset?sid
+-- 2. Statische Semantik, Hinsehen, check.sid >> check?sid
+-- 3. Modellumsetzung (wenn Rauch gemeldet, dann wird SENSOR zu SMOKING_SENSOR), Hinsehen, SENSOR(sid) >> SMOKING_SENSOR(sid)
+
+SENSOR(sid) = reset?sid -> SENSOR(sid)
+              [] check?sid -> ((smoke!sid -> SMOKING_SENSOR(sid))
+                              |~| (no_smoke!sid -> SENSOR(sid)))
 
 --Zustand des Sensors wenn Rauch erkannt
-SMOKING_SENSOR (sid) = check.sid -> smoke!sid -> SMOKING_SENSOR(sid)
-                    [] reset -> SENSOR (sid)
+-- SMOKING_SENSOR (sid) = check.sid -> smoke!sid -> SMOKING_SENSOR(sid)
+--                        [] reset -> SENSOR (sid)
+
+-- 1. Statische Semantik, Hinsehen, check.sid >> check?sid
+-- 2. Statische Semantik, Hinsehen, reset >> reset?sid
+
+SMOKING_SENSOR(sid) = check?sid -> smoke!sid -> SMOKING_SENSOR(sid)
+                   [] reset?sid -> SENSOR(sid)
 
 --Melder (Reset Teil)
 RESET_MELDER = reset!0 -> reset!1 -> MELDER
 
 --Melder (Auswertungs Teil)
-MELDER_ALARM_SUB = smoke?x1 -> (smoke?x2 -> alarm -> RESET_MELDER
-                                [] no_smoke.(1-x1) -> reset!x1 -> MELDER)
-				[] no_smoke?y1 -> (no_smoke.(1-y1) -> MELDER
-				[] smoke?y2 -> reset!y2 -> MELDER)
+-- MELDER_ALARM_SUB = smoke?x1 -> (smoke?x2 -> alarm -> RESET_MELDER
+--                                 [] no_smoke.(1-x1) -> reset!x1 -> MELDER)
+-- 				           [] no_smoke?y1 -> (no_smoke.(1-y1) -> MELDER
+--                   [] smoke?y2 -> reset!y2 -> MELDER)
+
+-- 1. Modellumsetzung (ein ack fehlt), Hinsehen, alarm >> alarm -> ack
+-- 2. Syntax/Statische Semantik (Klammersetzung), FDR2
+-- 3. Modellumsetzung, Hinsehen, smoke?x2 >> smoke?(1-x1)
+
+MELDER_ALARM_SUB = (smoke?x1 -> ((smoke?x2 -> alarm -> ack -> RESET_MELDER)
+                                [] (no_smoke?x2 -> reset!x1 -> MELDER)))
+                  [] (no_smoke?y1 -> ((no_smoke?y2 -> MELDER)
+                                    [] (smoke?y2 -> reset!y1 -> MELDER)))
+
 
 --Melder (Check Teil)
 MELDER = check!0 -> check!1 -> MELDER_ALARM_SUB
 
 --System
+-- SYS = (SENSOR(1) ||| SENSOR(0))
+--           [| {| smoke, no_smoke, check, reset, ack  |} |]
+--       MELDER
+
+-- 1. Modellumsetzung/Prüfeigenschaften (ack nicht Bestandteil der Sensoren), FDR2, ack >> weg
+
 SYS = (SENSOR(1) ||| SENSOR(0))
-          [| {| smoke, no_smoke, check, reset, ack  |} |]
+          [| {| smoke, no_smoke, check, reset |} |]
       MELDER
 
 --Spezifikation (Empfang der Signale beider Sensoren)
-RCV_SMOKES = 
-		 smoke.0 -> smoke.1 -> STOP
+-- RCV_SMOKES = 
+--       smoke.0 -> smoke.1 -> STOP
+--       |~| smoke.1 -> smoke.0 -> SKIP
+--       |~| smoke.0 -> no_smoke.1 -> SKIP
+--       |~| no_smoke.1 -> smoke.0 -> RCV_SMOKES
+--       |~| no_smoke.0 -> smoke.1 -> RCV_SMOKES
+--       |~| smoke.1 -> no_smoke.0 -> RCV_SMOKES
+--       |~| no_smoke.0 -> no_smoke.1 -> RCV_SMOKES
+--       |~| no_smoke.1 -> no_smoke.0 -> RCV_SMOKES
+
+-- 1. Statische Semantik, Hinsehen, STOP >> SKIP
+-- 2. Modellumsetzung (wenn Fehlalarm, dann reset und weiter wie vorher), Hinsehen, smoke.0 -> no_smoke.1 -> SKIP >> ... -> RCV_SMOKES
+
+RCV_SMOKES = smoke.0 -> smoke.1 -> SKIP
              |~| smoke.1 -> smoke.0 -> SKIP
-	     |~| smoke.0 -> no_smoke.1 -> SKIP
-	     |~| no_smoke.1 -> smoke.0 -> RCV_SMOKES
-	     |~| no_smoke.0 -> smoke.1 -> RCV_SMOKES
-	     |~| smoke.1 -> no_smoke.0 -> RCV_SMOKES
-	     |~| no_smoke.0 -> no_smoke.1 -> RCV_SMOKES
-	     |~| no_smoke.1 -> no_smoke.0 -> RCV_SMOKES
+             |~| smoke.0 -> no_smoke.1 -> RCV_SMOKES
+             |~| no_smoke.1 -> smoke.0 -> RCV_SMOKES
+             |~| no_smoke.0 -> smoke.1 -> RCV_SMOKES
+             |~| smoke.1 -> no_smoke.0 -> RCV_SMOKES
+             |~| no_smoke.0 -> no_smoke.1 -> RCV_SMOKES
+             |~| no_smoke.1 -> no_smoke.0 -> RCV_SMOKES
 
 --Spezifikation (WENN genau zwei smoke empfangen, dann auch Alarm auslösen)
 
+-- CHECK_MELDER = RCV_SMOKES -> alarm -> ack -> CHECK_MELDER
 
-CHECK_MELDER = RCV_SMOKES -> alarm -> ack -> CHECK_MELDER
+-- 1. Syntax, FDR2, Kein Prefix: RCV_SMOKES -> alarm >> RCV_SMOKES; alarm
+
+CHECK_MELDER = RCV_SMOKES; alarm -> ack -> CHECK_MELDER
 
 --Check der Implementierung
 
-assert CHECK_MELDER [F= SYS\{| check|}
+-- assert CHECK_MELDER [F= SYS \ {| check |}
 
+-- 1. Prüfeigenschaften, FDR2, check >> check, reset
+
+assert CHECK_MELDER [F= SYS \ {| check, reset |}
 
 

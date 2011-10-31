@@ -1,0 +1,11 @@
+
+channel roh, waschen, braten
+
+ROH = roh -> waschen -> ROH
+BRATEN = waschen -> braten -> BRATEN
+SYS = ROH [| {| waschen |} |] BRATEN
+
+X = (roh -> waschen -> X) |~| (braten -> waschen -> X)
+
+assert X [F= SYS
+

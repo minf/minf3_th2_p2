@@ -1,6 +1,7 @@
 
 \documentclass{scrreprt}
 
+\usepackage{amsmath, amsthm, amssymb}
 \usepackage[utf8]{inputenc}
 \usepackage{zed-csp}
 
@@ -73,6 +74,75 @@ Betrachten Sie das Fragment einer CSP-Spezifikation für eine Variante des Peter
  \item d) durch geeignete Prüfanweisungen, die belegen, dass Petersons Lösung keine strict alternation realisiert.
 \end{itemize}
 Demonstrieren Sie die Prüfungen und die Spezifikation im Praktikum.
+
+\section{Debugging bei CSP}
+
+In der Datei rauchmelder-problems.csp finden Sie ein CSP Prozess-System, das
+einen Rauchmelder mit zwei Sensorkomponenten und einer zentralen Meldeeinheit
+versucht entsprechend der folgenden informellen Spezikfaiton zu modellieren:
+
+\begin{itemize}
+  \item Die Sensorkomponenten können per {\tt reset}-Kommando zurückgesetzt
+        werden.
+  \item Die Meldeeinheit fragt bei den Sensorkomponenten regelmäßig mit dem
+        Kommando {\tt check} an, ob Rauch detektiert wird.
+  \item Auf diese Anfrage der Zentraleinheit liefert eine Sensorkomponente
+        zurück, ob sie Rauch detektiert ({\tt smoke}) oder nicht ({\tt no smoke}).
+  \item Nachdem eine Sensorkomponente smoke gemeldet hat, tut sie dies auf alle
+        folgenden Anfragen bis zum Zurücksetzen.
+  \item Die zentrale Meldeeinheit geht erst bei einer Positivmeldung von beiden
+        Sensoren davon aus, dass eine Gefahrensituation vorliegt. Nach Empfang eines
+        {\tt smoke} Signals fragt sie daher bei dem zweiten Sensor an, ob dieser
+        auch Rauch detektiert.
+  \item In dem Fall, in dem beide Sensoreinheiten smoke melden, wird von der
+        Meldeeinheit ein {\tt alarm} Signal ausgelöst.
+  \item Nachdem die Meldeeinheit auf das alarm Signal ein {\tt ack} Signal aus der
+        Umgebung erhalten hat, setzt sie die Sensoreinheiten zurück.
+  \item In dem Fall, dass nur eine Sensoreinheit {\tt smoke} meldet, wird dies als
+        Fehler angesehen und die Komponente zurückgesetzt.
+\end{itemize}
+
+Die Spezifikation wie sie vorliegt ist fehlerhaft und zwar sowohl bzgl der
+Syntax, der statischen Semantik, der Modellumsetzung und der Prüfeigenschaften.
+Finden Sie die Fehler mit FDR und dokumentieren und korrigieren Sie sie. Bei
+der Dokumentation der Fehler geben Sie bitte an
+
+\begin{itemize}
+  \item wie sie den Fehler entdeckt haben
+  \item wie sich der Fehler bemerkbar macht
+  \item wie er behoben wurde
+\end{itemize}
+
+Lösung s. Ausdruck
+
+\section{Verifikation mit Refinement}
+
+In Restaurantküchen gibt es die Vorschrift, dass zwischen der Verarbeitung von
+rohem und gebratenem Fleisch die Hände gewaschen werden müssen. Es wurde
+versucht, diese Regel in der folgenden CSP-Spezifikation zu erfassen:
+
+\begin{eqnarray*}
+  ROH &=& roh \then waschen \then ROH \\
+  BRATEN &=& waschen \then braten \then BRATEN \\
+  SYS &=& ROH \parallel[\set{waschen}] BRATEN
+\end{eqnarray*}
+
+Prüfen Sie ob dieser Prozess die beschriebene Regel wiedergibt mit Hilfe von CSP-Refinement,
+indem Sie mit einen geeigneten Prozess X eine Refinementcheck im Failuresmodell durchführt.
+Wie muss X aussehen und wie die Verfeinerungsrelation?
+Demonstrieren Sie im Praktikum die Spezifikation und die Prüfung.
+
+\begin{equation*}
+  X = (roh \then waschen \then X) \intchoice (braten \then waschen \then X)
+\end{equation*}
+
+\begin{equation*}
+  X \refinedby_F SYS
+\end{equation*}
+
+$x \refinedby_F SYS$ ist falsch. $SYS$ erlaubt bspw. $roh \then waschen \then braten \then roh$,
+was offensichtlich ein Verstoß gegen die Vorschrift ist, dass zwischen der Verarbeitung von
+rohem und gebratenem Fleisch die Hände gewaschen werden müssen.
 
 \end{document}
 
