@@ -124,7 +124,7 @@ TEST12 = (enter.0 -> TEST10) |~| (enter.2 -> TEST10)
 TEST13 = (enter.0 -> TEST10) |~| (enter.1 -> TEST10)
 assert TEST10 [T= TFSYS
 
--- dabei ist herausgekommen, dass enter enter.0 -> enter.2 -> enter.1 -> enter.1 in SYS moeglich ist,
+-- dabei ist herausgekommen, dass enter.0 -> enter.2 -> enter.1 -> enter.1 in SYS moeglich ist,
 -- daher folgender, einfacher test:
 TEST14 = enter.0 -> enter.2 -> enter.1 -> enter.1 -> STOP
 assert TFSYS [T= TEST14
