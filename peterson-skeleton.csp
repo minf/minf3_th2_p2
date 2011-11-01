@@ -81,6 +81,7 @@ DONT_CARE = {| addInterested, removeInterested, cardInterested, allInterested,
               wrTurn, rdTurn |}
 
 TSYS = SYS \ DONT_CARE
+TFSYS = TSYS \ {| start, leave, error |}
 
 -- Prüfbedingungen
 -- c) die prueufen, ob das System den wechselseitigen Ausschluss garantieren:
@@ -104,4 +105,27 @@ TEST3 = start.0 -> start.1 -> start.2 ->
               leave.0 -> 
           enter.1 -> leave.1 -> STOP
 
+-- wenn strict alternation garantiert werden wuerde, dann wuerde gelten:
+TEST5 = (enter.0 -> TEST6) |~| (enter.1 -> TEST7) |~| (enter.2 -> TEST8)
+TEST6 = (enter.1 -> enter.2 -> TEST5) |~| (enter.2 -> enter.1 -> TEST5)
+TEST7 = (enter.2 -> enter.0 -> TEST5) |~| (enter.0 -> enter.2 -> TEST5)
+TEST8 = (enter.0 -> enter.1 -> TEST5) |~| (enter.1 -> enter.0 -> TEST5)
+assert TEST5 [T= TFSYS
+
+-- dabei ist aber herausgekommen, dass enter.0 -> enter.1 -> enter.0 in SYS moeglich ist,
+-- daher folgender, einfacher test:
+TEST9 = enter.0 -> enter.1 -> enter.0 -> STOP
+assert TFSYS [T= TEST9
+
+-- aufgeweichte strict alternation (nicht der gleiche prozess mehrmals hinternander)
+TEST10 = (enter.0 -> TEST11) |~| (enter.1 -> TEST12) |~| (enter.2 -> TEST13)
+TEST11 = (enter.1 -> TEST10) |~| (enter.2 -> TEST10)
+TEST12 = (enter.0 -> TEST10) |~| (enter.2 -> TEST10)
+TEST13 = (enter.0 -> TEST10) |~| (enter.1 -> TEST10)
+assert TEST10 [T= TFSYS
+
+-- dabei ist herausgekommen, dass enter enter.0 -> enter.2 -> enter.1 -> enter.1 in SYS moeglich ist,
+-- daher folgender, einfacher test:
+TEST14 = enter.0 -> enter.2 -> enter.1 -> enter.1 -> STOP
+assert TFSYS [T= TEST14
 

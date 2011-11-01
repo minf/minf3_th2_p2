@@ -43,7 +43,8 @@ RESET_MELDER = reset!0 -> reset!1 -> MELDER
 -----------
 -- 1. Modellumsetzung (ein ack fehlt), Hinsehen, alarm >> alarm -> ack
 -- 2. Syntax/Statische Semantik (Klammersetzung), FDR2
--- 3. Modellumsetzung, Hinsehen, smoke?x2 >> smoke?(1-x1)
+-- 3. Modellumsetzung, Hinsehen, no_smoke?(1-x1) >> no_smoke?x2
+-- 4. Modellumsetzung, Hinsehen, no_smoke.(1-y1) >> no_smoke?y2
 
 MELDER_ALARM_SUB = (smoke?x1 -> ((smoke?x2 -> alarm -> ack -> RESET_MELDER)
                                 [] (no_smoke?x2 -> reset!x1 -> MELDER)))

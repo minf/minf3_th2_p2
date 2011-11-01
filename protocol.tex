@@ -142,7 +142,9 @@ Demonstrieren Sie im Praktikum die Spezifikation und die Prüfung.
 
 $x \refinedby_F SYS$ ist falsch. $SYS$ erlaubt bspw. $roh \then waschen \then braten \then roh$,
 was offensichtlich ein Verstoß gegen die Vorschrift ist, dass zwischen der Verarbeitung von
-rohem und gebratenem Fleisch die Hände gewaschen werden müssen.
+rohem und gebratenem Fleisch die Hände gewaschen werden müssen. Bezogen auf die Failures ist zu
+sagen, dass $X$ nach $roh \then waschen \then braten$ das Event $roh$ verweigert, $SYS$ jedoch
+nicht.
 
 \end{document}
 
