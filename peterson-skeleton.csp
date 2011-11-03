@@ -129,3 +129,10 @@ assert TEST10 [T= TFSYS
 TEST14 = enter.0 -> enter.2 -> enter.1 -> enter.1 -> STOP
 assert TFSYS [T= TEST14
 
+
+TEST15 = enter?x -> (
+                      enter.((x+1)%(N+1)) -> enter.((x+2)%(N+1)) -> TESTX 
+                  |~| enter.((x+2)%(N+1)) -> enter.((x+1)%(N+1)) -> TESTX
+                   ) |~| STOP
+assert TEST15 [T= TFSYS
+
